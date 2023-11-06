@@ -7,14 +7,10 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
 
     $id_books = $_GET['id_books'];
 
-    // Create a PDO instance
-    $pdo = new PDO('mysql:host=localhost;dbname=project_library', 'root', '');
-
-    // Use prepared statements to delete records
     $deleteBookCategoriesQuery = "DELETE FROM bookcategories WHERE id_books = :id_books";
     $deleteBooksQuery = "DELETE FROM books WHERE id_books = :id_books";
 
-    $pdo->beginTransaction(); // Start a transaction
+    $pdo->beginTransaction();
 
     try {
         $stmt1 = $pdo->prepare($deleteBookCategoriesQuery);
@@ -25,9 +21,9 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
         $stmt2->bindParam(':id_books', $id_books, PDO::PARAM_INT);
         $stmt2->execute();
 
-        $pdo->commit(); // Commit the transaction
+        $pdo->commit();
     } catch (PDOException $e) {
-        $pdo->rollBack(); // Roll back the transaction on error
+        $pdo->rollBack();
         echo "Error: " . $e->getMessage();
     }
 
