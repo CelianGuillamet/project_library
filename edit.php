@@ -15,15 +15,24 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
 
         $categories = isset($_POST['categories']) ? $_POST['categories'] : [];
 
-        $updateBookQuery = "UPDATE books SET title = ?, publicationYear = ?, bookDescription = ?, id_author = ? WHERE id_books = ?";
+        $updateBookQuery = "UPDATE books SET title = ?, publicationYear = ?, bookDescription = ? WHERE id_books = ?";
         $stmt = $pdo->prepare($updateBookQuery);
-        $stmt->execute([$title, $publicationYear, $description, $authorID, $id_books]);
+        $stmt->execute([$title, $publicationYear, $description, $id_books]);
 
         if ($authorID == 0 && !empty($newAuthor)) {
+            $checkAuthorQuery = "SELECT id_author FROM authors WHERE authorName = ?";
+            $stmt = $pdo->prepare($checkAuthorQuery);
+            $stmt->execute([$newAuthor]);
+            $existingAuthor = $stmt->fetch(PDO::FETCH_ASSOC);
+            if($existingAuthor){
+                $newAuthorID = $existingAuthor['id_author'];
+            }else{
             $insertAuthorQuery = "INSERT INTO authors (authorName) VALUES (?)";
             $stmt = $pdo->prepare($insertAuthorQuery);
             $stmt->execute([$newAuthor]);
             $newAuthorID = $pdo->lastInsertId();
+            }
+            
         } else {
             $newAuthorID = $authorID;
         }
