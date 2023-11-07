@@ -29,7 +29,7 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
     echo '<tr><th>Description</th><td>' . $result["bookDescription"] . '</td></tr>';
     echo '<tr><th>Quantité disponible</th><td>' . $result["nbBooks"] . '</td></tr>';
     echo '</table>';
-    echo '</div';
+    echo '</div>';
 
     include "footer.php";
 } else {
