@@ -1,8 +1,9 @@
 <?php
 session_start();
+$titlePage = "Edit";
 include "header.php";
+
 if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
-    $titlePage = "Edit";
 
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $id_books = $_GET['id_books'];
@@ -70,7 +71,11 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
     while ($row = $categoryResult->fetch(PDO::FETCH_ASSOC)) {
         $categories[] = $row['categoryName'];
     }
-    $selectedCategories = [];
+   
+    $selectedCategoriesQuery = "SELECT c.categoryName FROM bookCategories bc JOIN categories c ON bc.id_category = c.id_category  WHERE bc.id_books = ?";
+    $stmt = $pdo->prepare($selectedCategoriesQuery);
+    $stmt->execute([$id_books]);
+    $selectedCategories = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
 
     echo '<form action="edit.php?id_books=' . $id_books . '" method="POST">';
     echo '<table>';
@@ -86,16 +91,11 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
     echo '</select>';
     echo '<input type="text" name="newAuthor" placeholder="Nom du nouvel auteur">';
     echo '</td></tr>';
-    echo '<tr><td>';
-    echo '<fieldset>';
-    echo '<legend>Catégories</legend>';
+    echo '<tr><th>Catégories : </th><td>';
     foreach ($categories as $category) {
-        $checked = in_array($category, $selectedCategories) ? 'checked' : '';
-        echo '<label>';
-        echo '<input type="checkbox" name="categories[]" value="' . $category . '" ' . $checked . '> ' . $category;
-        echo '</label><br>';
+        $isChecked = in_array($category, $selectedCategories) ? 'checked' : '';
+        echo '<input type="checkbox" name="categories[]" value="' . $category . '" ' . $isChecked . '> ' . $category . '<br>';
     }
-    echo '</fieldset>';
     echo '</td></tr>';
     echo '<tr><th>Description</th><td><textarea name="description">' . $book["bookDescription"] . '</textarea></td></tr>';
     echo '<tr><td><input type="submit" value="Enregistrer"></td></tr>';
@@ -107,3 +107,4 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
     header('Location: /login.php');
     exit();
 }
+
