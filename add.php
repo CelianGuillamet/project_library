@@ -9,7 +9,8 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
 
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $title = $_POST["title"];
-        $authorName = $_POST["authorName"];
+        $authorID = $_POST["authorID"];
+        $newAuthor = $_POST["newAuthor"];
         $categories = isset($_POST["categories"]) ? $_POST["categories"] : [];
         $publicationYear = $_POST["publicationYear"];
         $description = $_POST["description"];
@@ -19,8 +20,8 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
             $errors["title"] = "Le titre est manquant";
         }
 
-        if (empty($authorName)) {
-            $errors["authorName"] = "Le nom de l'auteur est manquant";
+        if (empty($authorID) && empty($newAuthor)) {
+            $errors["authorID"] = "L'auteur est manquant";
         }
 
         if (empty($categories)) {
@@ -43,26 +44,39 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
             $pdo->beginTransaction();
 
             try {
-               
-                $stmt = $pdo->prepare("INSERT INTO authors (authorName) VALUES (:authorName)");
-                $stmt->bindParam(':authorName', $authorName);
-                $stmt->execute();
-                $id_author = $pdo->lastInsertId();
+                if (empty($authorID) && !empty($newAuthor)) {
+                    $checkAuthorQuery = "SELECT id_author FROM authors WHERE authorName = :newAuthor";
+                    $stmt = $pdo->prepare($checkAuthorQuery);
+                    $stmt->bindParam(':newAuthor', $newAuthor, PDO::PARAM_STR);
+                    $stmt->execute();
+                    $existingAuthor = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if ($existingAuthor) {
+                        $newAuthorID = $existingAuthor['id_author'];
+                    } else {
+                        $insertAuthorQuery = "INSERT INTO authors (authorName) VALUES (:newAuthor)";
+                        $stmt = $pdo->prepare($insertAuthorQuery);
+                        $stmt->bindParam(':newAuthor', $newAuthor, PDO::PARAM_STR);
+                        $stmt->execute();
+                        $newAuthorID = $pdo->lastInsertId();
+                    }
+                } else {
+                    $newAuthorID = $authorID;
+                }
 
                 $stmt = $pdo->prepare("INSERT INTO books (title, publicationYear, id_author, bookDescription, nbBooks) VALUES (:title, :publicationYear, :id_author, :description, :nbBooks)");
-                $stmt->bindParam(':title', $title);
-                $stmt->bindParam(':publicationYear', $publicationYear);
-                $stmt->bindParam(':id_author', $id_author);
-                $stmt->bindParam(':description', $description);
-                $stmt->bindParam(':nbBooks', $nbBooks);
+                $stmt->bindParam(':title', $title, PDO::PARAM_STR);
+                $stmt->bindParam(':publicationYear', $publicationYear, PDO::PARAM_INT);
+                $stmt->bindParam(':id_author', $newAuthorID, PDO::PARAM_INT);
+                $stmt->bindParam(':description', $description, PDO::PARAM_STR);
+                $stmt->bindParam(':nbBooks', $nbBooks, PDO::PARAM_INT);
                 $stmt->execute();
                 $id_books = $pdo->lastInsertId();
 
-                
                 foreach ($categories as $category) {
                     $stmt = $pdo->prepare("INSERT INTO bookCategories (id_books, id_category) VALUES (:id_books, (SELECT id_category FROM categories WHERE categoryName = :category))");
                     $stmt->bindParam(':id_books', $id_books, PDO::PARAM_INT);
-                    $stmt->bindParam(':category', $category);
+                    $stmt->bindParam(':category', $category, PDO::PARAM_STR);
                     $stmt->execute();
                 }
 
@@ -71,15 +85,15 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
                 header('Location: /index.php');
                 exit();
             } catch (PDOException $e) {
-                $pdo->rollBack(); 
+                $pdo->rollBack();
                 echo "Error: " . $e->getMessage();
-            }
-        } else {
-            foreach ($errors as $key => $value) {
-                echo $value . "<br/>";
             }
         }
     }
+
+    $authorsQuery = "SELECT id_author, authorName FROM authors";
+    $authorsResult = $pdo->query($authorsQuery);
+    $authorsList = $authorsResult->fetchAll(PDO::FETCH_ASSOC);
 
     $categoryQuery = "SELECT categoryName FROM categories";
     $stmt = $pdo->query($categoryQuery);
@@ -89,8 +103,18 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
 <form method="post" action="add.php">
     <label for="title">Titre</label>
     <input type="text" name="title" id="title">
-    <label for="authorName">Nom de l'auteur</label>
-    <input type="text" name="authorName" id="authorName">
+    <tr><th>Auteur : </th><td>
+    <select name="authorID">
+        <option value="0">-- Nouvel auteur --</option>
+        <?php 
+            foreach ($authorsList as $author) {
+            $selected = ($author['id_author'] == $authorID) ? 'selected' : '';
+            echo '<option value="' . $author['id_author'] . '" ' . $selected . '>' . $author['authorName'] . '</option>';
+            }
+        ?>
+    </select>
+    <input type="text" name="newAuthor" placeholder="Nom du nouvel auteur">
+    </td></tr>
     <label for="publicationYear">Année de publication</label>
     <input type="text" name="publicationYear" id="publicationYear">
     <label for="description">Description</label>
@@ -112,7 +136,7 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
 
 <?php
 
-    include "footer.php";
+include "footer.php";
 } else {
     header('Location: /login.php');
     exit();

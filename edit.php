@@ -81,9 +81,10 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
         $categories[] = $row['categoryName'];
     }
    
-    $selectedCategoriesQuery = "SELECT c.categoryName FROM bookCategories bc JOIN categories c ON bc.id_category = c.id_category  WHERE bc.id_books = ?";
+    $selectedCategoriesQuery = "SELECT c.categoryName FROM bookCategories bc JOIN categories c ON bc.id_category = c.id_category  WHERE bc.id_books = :id_books";
     $stmt = $pdo->prepare($selectedCategoriesQuery);
-    $stmt->execute([$id_books]);
+    $stmt->bindParam(':id_books', $id_books, PDO::PARAM_INT);
+    $stmt->execute();
     $selectedCategories = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
 
     echo '<form action="edit.php?id_books=' . $id_books . '" method="POST">';
