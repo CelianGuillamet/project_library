@@ -60,9 +60,10 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
     $query = "SELECT books.id_books, books.title, books.publicationYear, books.bookDescription, books.id_author, authors.authorName
               FROM books
               JOIN authors ON books.id_author = authors.id_author
-              WHERE books.id_books = ?";
+              WHERE books.id_books = :id_books";
     $stmt = $pdo->prepare($query);
-    $stmt->execute([$id_books]);
+    $stmt->bindParam(':id_books', $id_books, PDO::PARAM_INT);
+    $stmt->execute();
     $book = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $authorsQuery = "SELECT id_author, authorName FROM authors";
