@@ -16,7 +16,7 @@ if (isset($_SESSION['name'])) {
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $searchTerm = '%' . $_GET['search'] . '%';
     $resultQuery = $pdo -> prepare("SELECT books.id_books, books.title, authors.authorName FROM books
-                    INNER JOIN authors ON books.id_author = authors.id_author
+                    LEFT JOIN authors ON books.id_author = authors.id_author
                     WHERE books.title LIKE :searchTerm OR authors.authorName LIKE :searchTerm OR books.publicationYear LIKE :searchTerm");
     $resultQuery->bindParam(':searchTerm', $searchTerm, PDO::PARAM_STR);
     $resultQuery->execute();
