@@ -23,7 +23,7 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
     $results = $resultQuery->fetchAll(PDO::FETCH_ASSOC);
 } else {
     $resultQuery = $pdo->prepare("SELECT books.id_books, books.title, authors.authorName FROM books
-                    INNER JOIN authors ON books.id_author = authors.id_author");
+                    LEFT JOIN authors ON books.id_author = authors.id_author");
     $resultQuery->execute();
     $results = $resultQuery->fetchAll(PDO::FETCH_ASSOC);
 }
